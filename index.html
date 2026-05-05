@@ -7,40 +7,42 @@
 
 <style>
 :root{
-  --primary:#00B7C2;
+  --primary:#00aeb5;
   --dark:#0f172a;
   --light:#f8fafc;
 }
 
 body{
   margin:0;
-  font-family:Arial, Helvetica, sans-serif;
+  font-family:Arial, sans-serif;
   background:var(--light);
-  color:var(--dark);
 }
 
 header{
-  background:var(--primary);
-  padding:15px 20px;
+  background:#111;
+  padding:15px 25px;
   display:flex;
-  align-items:center;
   justify-content:space-between;
-  color:white;
+  align-items:center;
 }
 
 header img{
-  height:40px;
+  height:50px;
+}
+
+header h2{
+  color:white;
+  margin:0;
 }
 
 .filter-bar{
-  padding:15px;
   text-align:center;
+  padding:20px;
 }
 
 select{
   padding:8px 12px;
   border-radius:6px;
-  border:1px solid #ccc;
 }
 
 .products{
@@ -53,13 +55,8 @@ select{
 .card{
   background:white;
   border-radius:12px;
-  box-shadow:0 5px 15px rgba(0,0,0,0.08);
   overflow:hidden;
-  transition:.3s;
-}
-
-.card:hover{
-  transform:translateY(-5px);
+  box-shadow:0 5px 15px rgba(0,0,0,0.08);
 }
 
 .card img{
@@ -75,41 +72,33 @@ select{
 .badge{
   display:inline-block;
   padding:4px 8px;
-  font-size:12px;
   border-radius:20px;
+  font-size:12px;
   margin-top:5px;
 }
 
-.in{
-  background:#dcfce7;
-  color:#166534;
-}
-
-.out{
-  background:#fee2e2;
-  color:#991b1b;
-}
+.in{background:#dcfce7;color:#166534;}
+.out{background:#fee2e2;color:#991b1b;}
 
 button{
+  margin-top:10px;
+  padding:8px 12px;
   background:var(--primary);
   color:white;
   border:none;
-  padding:8px 12px;
   border-radius:6px;
   cursor:pointer;
-  margin-top:10px;
 }
 
-.whatsapp-float{
+.whatsapp{
   position:fixed;
   bottom:20px;
   right:20px;
   background:#25D366;
   color:white;
-  padding:12px 15px;
+  padding:12px 18px;
   border-radius:50px;
   text-decoration:none;
-  font-weight:bold;
 }
 </style>
 </head>
@@ -129,21 +118,22 @@ button{
 
 <div class="products" id="productList"></div>
 
-<a class="whatsapp-float" 
-href="https://wa.me/201092278234" 
-target="_blank">
-WhatsApp
-</a>
+<a class="whatsapp" href="https://wa.me/201092278234" target="_blank">WhatsApp</a>
 
 <script>
 
 const productsURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsp818LHJ9i4fVzl2B63EHRr-wJwcANhC9ZSUGKQn3TqgAxOjQFe4NfLNKl-sQ7Ndi1sZEzOpesx2L/pub?gid=0&single=true&output=csv";
-
 const variantsURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsp818LHJ9i4fVzl2B63EHRr-wJwcANhC9ZSUGKQn3TqgAxOjQFe4NfLNKl-sQ7Ndi1sZEzOpesx2L/pub?gid=365796544&single=true&output=csv";
+
+function clean(value){
+  if(!value) return "";
+  return value.replace(/"/g,'').trim();
+}
 
 async function loadData(){
   const prodRes = await fetch(productsURL);
   const prodText = await prodRes.text();
+
   const varRes = await fetch(variantsURL);
   const varText = await varRes.text();
 
@@ -160,7 +150,9 @@ function parseCSV(text){
   return rows.map(row=>{
     const values = row.split(",");
     let obj = {};
-    headers.forEach((h,i)=> obj[h.trim()] = values[i]?.trim());
+    headers.forEach((h,i)=>{
+      obj[clean(h)] = clean(values[i]);
+    });
     return obj;
   });
 }
@@ -170,6 +162,8 @@ function renderProducts(products, variants){
   container.innerHTML="";
 
   products.forEach(prod=>{
+    if(!prod.ProductID) return;
+
     const related = variants.filter(v=>v.ProductID===prod.ProductID);
     const first = related[0];
 
@@ -182,7 +176,7 @@ function renderProducts(products, variants){
         <h3>${prod.Name}</h3>
         <p>${prod.Category}</p>
         ${first ? `<p><strong>${first.Price} EGP</strong></p>` : ""}
-        ${first ? `<span class="badge ${first.Stock==='In Stock'?'in':'out'}">${first.Stock}</span>`:""}
+        ${first ? `<span class="badge ${first.Stock==='In Stock'?'in':'out'}">${first.Stock}</span>` : ""}
       </div>
     `;
 
@@ -193,6 +187,7 @@ function renderProducts(products, variants){
 function populateCategories(products){
   const select = document.getElementById("categoryFilter");
   const categories = [...new Set(products.map(p=>p.Category))];
+
   categories.forEach(cat=>{
     const option=document.createElement("option");
     option.value=cat;
@@ -201,17 +196,15 @@ function populateCategories(products){
   });
 
   select.addEventListener("change", e=>{
-    filterProducts(e.target.value);
-  });
-}
+    const category=e.target.value;
+    const cards=document.querySelectorAll(".card");
 
-function filterProducts(category){
-  const cards=document.querySelectorAll(".card");
-  cards.forEach(card=>{
-    if(category==="all") card.style.display="block";
-    else{
-      card.style.display=card.innerHTML.includes(category)?"block":"none";
-    }
+    cards.forEach(card=>{
+      if(category==="all") card.style.display="block";
+      else{
+        card.style.display=card.innerHTML.includes(category)?"block":"none";
+      }
+    });
   });
 }
 
