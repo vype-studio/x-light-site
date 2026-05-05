@@ -11,13 +11,22 @@ header img{height:55px}
 header h2{color:white;margin:0}
 .filter-bar{text-align:center;padding:20px}
 .products{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;padding:20px}
-.card{background:white;border-radius:12px;overflow:hidden;box-shadow:0 5px 15px rgba(0,0,0,0.08)}
+.card{background:white;border-radius:12px;overflow:hidden;box-shadow:0 5px 15px rgba(0,0,0,0.08);cursor:pointer}
 .card img{width:100%;height:220px;object-fit:cover}
 .card-content{padding:15px}
 .badge{display:inline-block;padding:4px 8px;border-radius:20px;font-size:12px;margin-top:5px}
 .in{background:#dcfce7;color:#166534}
 .out{background:#fee2e2;color:#991b1b}
 .whatsapp{position:fixed;bottom:20px;right:20px;background:#25D366;color:white;padding:12px 18px;border-radius:50px;text-decoration:none}
+
+/* Modal */
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+background:rgba(0,0,0,0.7);justify-content:center;align-items:center;}
+.modal-content{background:white;width:90%;max-width:700px;padding:20px;border-radius:12px;max-height:90vh;overflow:auto;position:relative}
+.close{position:absolute;top:10px;right:15px;font-size:22px;cursor:pointer}
+.variant-box{border-bottom:1px solid #eee;padding:10px 0}
+.variant-box:last-child{border:none}
+.variant-box button{margin-top:5px;background:#00b7c2;border:none;color:white;padding:5px 10px;border-radius:5px;cursor:pointer}
 </style>
 </head>
 
@@ -38,13 +47,24 @@ header h2{color:white;margin:0}
 
 <a class="whatsapp" href="https://wa.me/201092278234" target="_blank">WhatsApp</a>
 
+<!-- Modal -->
+<div id="productModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">×</span>
+    <img id="modalImage" style="width:100%;height:300px;object-fit:cover;border-radius:10px;">
+    <h2 id="modalTitle"></h2>
+    <p id="modalCategory"></p>
+    <p id="modalDescription"></p>
+    <h3>Available Variants</h3>
+    <div id="variantList"></div>
+  </div>
+</div>
+
 <script>
 
-// ✅ روابطك الحالية
 const productsURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSsp818LHJ9i4fVzl2B63EHRr-wJwcANhC9ZSUGKQn3TqgAxOjQFe4NfLNKl-sQ7Ndi1sZEzOpesx2L/pub?gid=0&single=true&output=csv";
 const variantsURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSsp818LHJ9i4fVzl2B63EHRr-wJwcANhC9ZSUGKQn3TqgAxOjQFe4NfLNKl-sQ7Ndi1sZEzOpesx2L/pub?gid=365796544&single=true&output=csv";
 
-// ✅ CSV Parser نظيف
 function parseCSV(text){
   const rows=text.trim().split("\n");
   const headers=rows[0].split(",").map(h=>h.replace(/"/g,"").trim());
@@ -59,32 +79,33 @@ function parseCSV(text){
   });
 }
 
-async function loadData(){
-  const products=parseCSV(await fetch(productsURL).then(r=>r.text()));
-  const variants=parseCSV(await fetch(variantsURL).then(r=>r.text()));
+let globalProducts=[];
+let globalVariants=[];
 
-  renderProducts(products,variants);
-  buildFilter(products);
+async function loadData(){
+  globalProducts=parseCSV(await fetch(productsURL).then(r=>r.text()));
+  globalVariants=parseCSV(await fetch(variantsURL).then(r=>r.text()));
+  renderProducts();
+  buildFilter();
 }
 
-function renderProducts(products,variants){
+function renderProducts(){
   const container=document.getElementById("productList");
   container.innerHTML="";
 
-  products.forEach(p=>{
+  globalProducts.forEach(p=>{
     if(!p.ProductID) return;
 
-    const related=variants.filter(v=>v.ProductID===p.ProductID);
+    const related=globalVariants.filter(v=>v.ProductID===p.ProductID);
     const first=related[0];
-
-    const imgURL=p.Image ? p.Image.trim() : "";
 
     const card=document.createElement("div");
     card.className="card";
     card.setAttribute("data-category",p.Category);
+    card.onclick=()=>openModal(p.ProductID);
 
     card.innerHTML=`
-      <img src="${imgURL}" onerror="this.src='https://via.placeholder.com/400'">
+      <img src="${p.Image}" onerror="this.src='https://via.placeholder.com/400'">
       <div class="card-content">
         <h3>${p.Name}</h3>
         <p>${p.Category || ""}</p>
@@ -97,9 +118,44 @@ function renderProducts(products,variants){
   });
 }
 
-function buildFilter(products){
+function openModal(productID){
+  const product=globalProducts.find(p=>p.ProductID===productID);
+  const related=globalVariants.filter(v=>v.ProductID===productID);
+
+  document.getElementById("modalImage").src=product.Image;
+  document.getElementById("modalTitle").innerText=product.Name;
+  document.getElementById("modalCategory").innerText=product.Category;
+  document.getElementById("modalDescription").innerText=product.Description || "";
+
+  const container=document.getElementById("variantList");
+  container.innerHTML="";
+
+  related.forEach(v=>{
+    container.innerHTML+=`
+      <div class="variant-box">
+        <strong>${v.Watt}</strong> - ${v.Price} EGP<br>
+        Size: ${v.Dimension}<br>
+        <span style="color:${v.Stock==='In Stock'?'green':'red'}">${v.Stock}</span><br>
+        <button onclick="orderWhatsApp('${product.Name}','${v.Watt}')">Order on WhatsApp</button>
+      </div>
+    `;
+  });
+
+  document.getElementById("productModal").style.display="flex";
+}
+
+function closeModal(){
+  document.getElementById("productModal").style.display="none";
+}
+
+function orderWhatsApp(name,watt){
+  const message=`I want to order ${name} - ${watt}`;
+  window.open(`https://wa.me/201092278234?text=${encodeURIComponent(message)}`);
+}
+
+function buildFilter(){
   const select=document.getElementById("categoryFilter");
-  const categories=[...new Set(products.map(p=>p.Category).filter(Boolean))];
+  const categories=[...new Set(globalProducts.map(p=>p.Category).filter(Boolean))];
 
   categories.forEach(cat=>{
     const option=document.createElement("option");
@@ -111,12 +167,9 @@ function buildFilter(products){
   select.addEventListener("change",e=>{
     const value=e.target.value;
     const cards=document.querySelectorAll(".card");
-
     cards.forEach(card=>{
       if(value==="all") card.style.display="block";
-      else{
-        card.style.display=card.getAttribute("data-category")===value?"block":"none";
-      }
+      else card.style.display=card.getAttribute("data-category")===value?"block":"none";
     });
   });
 }
