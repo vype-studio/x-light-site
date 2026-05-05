@@ -3,19 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <title>X-Light Catalog</title>
+
 <style>
 body{margin:0;font-family:Arial;background:#f4f4f4}
-header{background:#111;padding:15px 25px;display:flex;justify-content:space-between;align-items:center}
-header img{height:50px}
+header{background:#00b7c2;padding:15px 25px;display:flex;justify-content:space-between;align-items:center}
+header img{height:55px}
 header h2{color:white;margin:0}
-.products{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;padding:20px}
-.card{background:white;border-radius:12px;overflow:hidden;box-shadow:0 5px 15px rgba(0,0,0,0.08)}
-.card img{width:100%;height:220px;object-fit:cover}
-.card-content{padding:15px}
-.badge{display:inline-block;padding:4px 8px;border-radius:20px;font-size:12px;margin-top:5px}
+
+.filter-bar{
+  text-align:center;
+  padding:20px;
+}
+
+.products{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  gap:20px;
+  padding:20px
+}
+
+.card{
+  background:white;
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow:0 5px 15px rgba(0,0,0,0.08)
+}
+
+.card img{
+  width:100%;
+  height:220px;
+  object-fit:cover
+}
+
+.card-content{
+  padding:15px
+}
+
+.badge{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:20px;
+  font-size:12px;
+  margin-top:5px
+}
+
 .in{background:#dcfce7;color:#166534}
 .out{background:#fee2e2;color:#991b1b}
-.whatsapp{position:fixed;bottom:20px;right:20px;background:#25D366;color:white;padding:12px 18px;border-radius:50px;text-decoration:none}
+
+.whatsapp{
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  background:#25D366;
+  color:white;
+  padding:12px 18px;
+  border-radius:50px;
+  text-decoration:none
+}
 </style>
 </head>
 
@@ -26,14 +70,23 @@ header h2{color:white;margin:0}
 <h2>X-Light</h2>
 </header>
 
+<div class="filter-bar">
+<select id="categoryFilter">
+<option value="all">All Categories</option>
+</select>
+</div>
+
 <div class="products" id="productList"></div>
+
 <a class="whatsapp" href="https://wa.me/201092278234" target="_blank">WhatsApp</a>
 
 <script>
-const productsURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsp818LHJ9i4fVzl2B63EHRr-wJwcANhC9ZSUGKQn3TqgAxOjQFe4NfLNKl-sQ7Ndi1sZEzOpesx2L/pub?gid=0&single=true&output=csv";
-const variantsURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsp818LHJ9i4fVzl2B63EHRr-wJwcANhC9ZSUGKQn3TqgAxOjQFe4NfLNKl-sQ7Ndi1sZEzOpesx2L/pub?gid=365796544&single=true&output=csv";
+
+const productsURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSsp818LHJ9i4fVzl2B63EHRr-wJwcANhC9ZSUGKQn3TqgAxOjQFe4NfLNKl-sQ7Ndi1sZEzOpesx2L/pub?gid=0&single=true&output=csv";
+const variantsURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSsp818LHJ9i4fVzl2B63EHRr-wJwcANhC9ZSUGKQn3TqgAxOjQFe4NfLNKl-sQ7Ndi1sZEzOpesx2L/pub?gid=365796544&single=true&output=csv";
 
 function clean(text){
+  if(!text) return "";
   return text.replace(/"/g,"").trim();
 }
 
@@ -52,6 +105,11 @@ async function loadData(){
   const products=parseCSV(await fetch(productsURL).then(r=>r.text()));
   const variants=parseCSV(await fetch(variantsURL).then(r=>r.text()));
 
+  renderProducts(products,variants);
+  buildFilter(products);
+}
+
+function renderProducts(products,variants){
   const container=document.getElementById("productList");
   container.innerHTML="";
 
@@ -61,11 +119,14 @@ async function loadData(){
     const related=variants.filter(v=>v.ProductID===p.ProductID);
     const first=related[0];
 
+    const imgURL=clean(p.Image);
+
     const card=document.createElement("div");
     card.className="card";
+    card.setAttribute("data-category",p.Category);
 
     card.innerHTML=`
-      <img src="${p.Image}" onerror="this.src='https://via.placeholder.com/400'">
+      <img src="${imgURL}" onerror="this.src='https://via.placeholder.com/400'">
       <div class="card-content">
         <h3>${p.Name}</h3>
         <p>${p.Category}</p>
@@ -78,7 +139,33 @@ async function loadData(){
   });
 }
 
+function buildFilter(products){
+  const select=document.getElementById("categoryFilter");
+  const categories=[...new Set(products.map(p=>p.Category))];
+
+  categories.forEach(cat=>{
+    if(!cat) return;
+    const option=document.createElement("option");
+    option.value=cat;
+    option.textContent=cat;
+    select.appendChild(option);
+  });
+
+  select.addEventListener("change",e=>{
+    const value=e.target.value;
+    const cards=document.querySelectorAll(".card");
+
+    cards.forEach(card=>{
+      if(value==="all") card.style.display="block";
+      else{
+        card.style.display=card.getAttribute("data-category")===value?"block":"none";
+      }
+    });
+  });
+}
+
 loadData();
+
 </script>
 
 </body>
