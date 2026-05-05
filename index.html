@@ -1,10 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>X-Light Catalog</title>
-
 <style>
 body{margin:0;font-family:Arial;background:#f4f4f4}
 header{background:#111;padding:15px 25px;display:flex;justify-content:space-between;align-items:center}
@@ -24,38 +22,55 @@ header h2{color:white;margin:0}
 <body>
 
 <header>
-  <img src="logo.png">
-  <h2>X-Light</h2>
+<img src="logo.png">
+<h2>X-Light</h2>
 </header>
 
 <div class="products" id="productList"></div>
-
 <a class="whatsapp" href="https://wa.me/201092278234" target="_blank">WhatsApp</a>
 
 <script>
-const SHEET_ID = "1SnsTtJU_USFUhcknkFBCmzsB-U86nw00SBPUJmdihYo";
+const productsURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsp818LHJ9i4fVzl2B63EHRr-wJwcANhC9ZSUGKQn3TqgAxOjQFe4NfLNKl-sQ7Ndi1sZEzOpesx2L/pub?gid=0&single=true&output=csv";
+const variantsURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsp818LHJ9i4fVzl2B63EHRr-wJwcANhC9ZSUGKQn3TqgAxOjQFe4NfLNKl-sQ7Ndi1sZEzOpesx2L/pub?gid=365796544&single=true&output=csv";
+
+function clean(text){
+  return text.replace(/"/g,"").trim();
+}
+
+function parseCSV(text){
+  const rows=text.trim().split("\n");
+  const headers=rows.shift().split(",");
+  return rows.map(r=>{
+    const cols=r.split(",");
+    let obj={};
+    headers.forEach((h,i)=>obj[clean(h)]=clean(cols[i]||""));
+    return obj;
+  });
+}
 
 async function loadData(){
-  const products = await fetch(`https://opensheet.elk.sh/${SHEET_ID}/Products`).then(r=>r.json());
-  const variants = await fetch(`https://opensheet.elk.sh/${SHEET_ID}/Variants`).then(r=>r.json());
+  const products=parseCSV(await fetch(productsURL).then(r=>r.text()));
+  const variants=parseCSV(await fetch(variantsURL).then(r=>r.text()));
 
-  const container = document.getElementById("productList");
+  const container=document.getElementById("productList");
   container.innerHTML="";
 
-  products.forEach(prod=>{
-    const related = variants.filter(v=>v.ProductID===prod.ProductID);
-    const first = related[0];
+  products.forEach(p=>{
+    if(!p.ProductID) return;
 
-    const card = document.createElement("div");
+    const related=variants.filter(v=>v.ProductID===p.ProductID);
+    const first=related[0];
+
+    const card=document.createElement("div");
     card.className="card";
 
     card.innerHTML=`
-      <img src="${prod.Image}" onerror="this.src='https://via.placeholder.com/400'">
+      <img src="${p.Image}" onerror="this.src='https://via.placeholder.com/400'">
       <div class="card-content">
-        <h3>${prod.Name}</h3>
-        <p>${prod.Category}</p>
-        ${first ? `<p><strong>${first.Price} EGP</strong></p>` : ""}
-        ${first ? `<span class="badge ${first.Stock==='In Stock'?'in':'out'}">${first.Stock}</span>` : ""}
+        <h3>${p.Name}</h3>
+        <p>${p.Category}</p>
+        ${first?`<p><strong>${first.Price} EGP</strong></p>`:""}
+        ${first?`<span class="badge ${first.Stock==='In Stock'?'in':'out'}">${first.Stock}</span>`:""}
       </div>
     `;
 
