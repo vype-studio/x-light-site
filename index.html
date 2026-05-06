@@ -11,7 +11,7 @@ body{
   background:#f4f4f4;
 }
 
-/* ✅ الشريط أسود */
+/* Header */
 header{
   background:#000;
   padding:15px 25px;
@@ -19,15 +19,16 @@ header{
   justify-content:space-between;
   align-items:center;
 }
-
 header img{height:55px}
 header h2{color:white;margin:0}
 
+/* Filter */
 .filter-bar{
   text-align:center;
   padding:20px;
 }
 
+/* Products Grid */
 .products{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
@@ -60,10 +61,6 @@ header h2{color:white;margin:0}
   padding:15px;
 }
 
-.card-content h3{
-  margin-bottom:5px;
-}
-
 .price{
   color:#00b7c2;
   font-weight:bold;
@@ -81,6 +78,7 @@ header h2{color:white;margin:0}
 .in{background:#dcfce7;color:#166534}
 .out{background:#fee2e2;color:#991b1b}
 
+/* WhatsApp */
 .whatsapp{
   position:fixed;
   bottom:20px;
@@ -94,6 +92,7 @@ header h2{color:white;margin:0}
   box-shadow:0 8px 20px rgba(0,0,0,0.2);
 }
 
+/* Modal */
 .modal{
   display:none;
   position:fixed;
@@ -125,23 +124,57 @@ header h2{color:white;margin:0}
   cursor:pointer;
 }
 
+/* ✅ Improved Variant Styling */
 .variant-box{
-  border-bottom:1px solid #eee;
-  padding:10px 0;
+  background:#f9fafb;
+  border-radius:10px;
+  padding:15px;
+  margin-bottom:15px;
+  box-shadow:0 3px 8px rgba(0,0,0,0.05);
 }
 
-.variant-box:last-child{
-  border:none;
+.variant-box strong{
+  font-size:18px;
+  display:block;
+  margin-bottom:5px;
+}
+
+.variant-price{
+  color:#00b7c2;
+  font-weight:bold;
+  font-size:16px;
+  margin-bottom:5px;
+}
+
+.variant-size{
+  color:#555;
+  font-size:14px;
+  margin-bottom:5px;
+}
+
+.stock-in{
+  color:#16a34a;
+  font-weight:bold;
+}
+
+.stock-out{
+  color:#dc2626;
+  font-weight:bold;
 }
 
 .variant-box button{
-  margin-top:5px;
+  margin-top:10px;
   background:#00b7c2;
   border:none;
   color:white;
-  padding:6px 12px;
-  border-radius:5px;
+  padding:8px 14px;
+  border-radius:6px;
   cursor:pointer;
+  transition:0.2s;
+}
+
+.variant-box button:hover{
+  background:#009aa3;
 }
 </style>
 </head>
@@ -249,10 +282,17 @@ function openModal(productID){
   related.forEach(v=>{
     container.innerHTML+=`
       <div class="variant-box">
-        <strong>${v.Watt}</strong> - ${v.Price} EGP<br>
-        Size: ${v.Dimension}<br>
-        <span style="color:${v.Stock==='In Stock'?'green':'red'}">${v.Stock}</span><br>
-        <button onclick="orderWhatsApp('${product.Name}','${v.Watt}')">Order on WhatsApp</button>
+        <strong>${v.Watt}</strong>
+        <div class="variant-price">${v.Price} EGP</div>
+        <div class="variant-size">Size: ${v.Dimension}</div>
+        <div class="${v.Stock==='In Stock'?'stock-in':'stock-out'}">
+          ${v.Stock}
+        </div>
+        ${v.Stock==='In Stock'
+          ? `<button onclick="orderWhatsApp('${product.Name}','${v.Watt}')">
+              Order on WhatsApp
+            </button>`
+          : ''}
       </div>
     `;
   });
