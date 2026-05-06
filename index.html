@@ -9,6 +9,12 @@ body{
   margin:0;
   font-family:Arial;
   background:#f4f4f4;
+  opacity:0;
+  animation:fadeIn 0.6s ease forwards;
+}
+
+@keyframes fadeIn{
+  to{ opacity:1; }
 }
 
 header{
@@ -41,6 +47,16 @@ header h2{color:white;margin:0}
   box-shadow:0 5px 15px rgba(0,0,0,0.08);
   cursor:pointer;
   transition:0.3s;
+  opacity:0;
+  transform:translateY(10px);
+  animation:cardFade 0.6s ease forwards;
+}
+
+@keyframes cardFade{
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
 }
 
 .card:hover{
@@ -89,7 +105,6 @@ header h2{color:white;margin:0}
   box-shadow:0 8px 20px rgba(0,0,0,0.2);
 }
 
-/* Modal */
 .modal{
   display:none;
   position:fixed;
@@ -323,12 +338,10 @@ function buildFilter(){
   });
 }
 
-/* ✅ SEARCH */
 document.addEventListener("input",function(e){
   if(e.target.id==="searchInput"){
     const searchValue=e.target.value.toLowerCase();
     const cards=document.querySelectorAll(".card");
-
     cards.forEach(card=>{
       const text=card.innerText.toLowerCase();
       card.style.display=text.includes(searchValue)?"block":"none";
