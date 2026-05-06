@@ -76,7 +76,7 @@ header h2{color:white;margin:0}
 .in{background:#dcfce7;color:#166534}
 .out{background:#fee2e2;color:#991b1b}
 
-/* ✅ Floating Buttons */
+/* Floating Buttons */
 .whatsapp{
   position:fixed;
   bottom:20px;
@@ -87,12 +87,11 @@ header h2{color:white;margin:0}
   border-radius:50px;
   text-decoration:none;
   font-weight:bold;
-  box-shadow:0 8px 20px rgba(0,0,0,0.2);
 }
 
 .location{
   position:fixed;
-  bottom:85px;   /* ✅ فوق الواتساب */
+  bottom:85px;
   right:20px;
   background:#00b7c2;
   color:white;
@@ -100,7 +99,85 @@ header h2{color:white;margin:0}
   border-radius:50px;
   text-decoration:none;
   font-weight:bold;
-  box-shadow:0 8px 20px rgba(0,0,0,0.2);
+}
+
+/* Modal */
+.modal{
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.7);
+  justify-content:center;
+  align-items:center;
+}
+
+.modal-content{
+  background:white;
+  width:90%;
+  max-width:700px;
+  padding:20px;
+  border-radius:12px;
+  max-height:90vh;
+  overflow:auto;
+  position:relative;
+}
+
+.close{
+  position:absolute;
+  top:10px;
+  right:15px;
+  font-size:22px;
+  cursor:pointer;
+}
+
+.variant-box{
+  background:#f9fafb;
+  border-radius:10px;
+  padding:15px;
+  margin-bottom:15px;
+  box-shadow:0 3px 8px rgba(0,0,0,0.05);
+}
+
+.variant-box strong{
+  font-size:18px;
+  display:block;
+  margin-bottom:5px;
+}
+
+.variant-price{
+  color:#00b7c2;
+  font-weight:bold;
+  font-size:16px;
+  margin-bottom:5px;
+}
+
+.variant-size{
+  color:#555;
+  font-size:14px;
+  margin-bottom:5px;
+}
+
+.stock-in{
+  color:#16a34a;
+  font-weight:bold;
+}
+
+.stock-out{
+  color:#dc2626;
+  font-weight:bold;
+}
+
+.variant-box button{
+  margin-top:10px;
+  background:#00b7c2;
+  border:none;
+  color:white;
+  padding:8px 14px;
+  border-radius:6px;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -122,9 +199,8 @@ style="padding:10px 15px;border-radius:6px;border:1px solid #ccc;width:220px;mar
 
 <div class="products" id="productList"></div>
 
-<!-- ✅ Location Button -->
 <a class="location"
-href="https://www.google.com/maps/search/X%20light%20magnetic__track%20%D9%85%D8%A7%D8%AC%D9%86%D8%AA%D9%83%2C%20%E2%80%8F%D8%A7%D9%84%D9%82%D8%A7%D9%87%D8%B1%D8%A9%E2%80%8F%D8%8C%20%E2%80%8F%D9%85%D8%AD%D8%A7%D9%81%D8%B8%D8%A9%20%D8%A7%D9%84%D9%82%D8%A7%D9%87%D8%B1%D8%A9%E2%80%8F%D8%8C%20%E2%80%8F%D9%85%D8%B5%D8%B1%E2%80%8F%2C%20Cairo%2C%20Cairo%20Governorate%2C%20Egypt/@30.0223,31.5186,17z?hl=en"
+href="https://www.google.com/maps/search/X%20light%20magnetic__track%20%D9%85%D8%A7%D8%AC%D9%86%D8%AA%D9%83%2C%20Cairo"
 target="_blank">
 📍 موقعنا
 </a>
@@ -135,7 +211,20 @@ target="_blank">
 WhatsApp
 </a>
 
+<div id="productModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">×</span>
+    <img id="modalImage" style="width:100%;height:300px;object-fit:contain;background:#f4f4f4;border-radius:10px;">
+    <h2 id="modalTitle"></h2>
+    <p id="modalCategory"></p>
+    <p id="modalDescription"></p>
+    <h3>Available Variants</h3>
+    <div id="variantList"></div>
+  </div>
+</div>
+
 <script>
+
 const productsURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSsp818LHJ9i4fVzl2B63EHRr-wJwcANhC9ZSUGKQn3TqgAxOjQFe4NfLNKl-sQ7Ndi1sZEzOpesx2L/pub?gid=0&single=true&output=csv";
 const variantsURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSsp818LHJ9i4fVzl2B63EHRr-wJwcANhC9ZSUGKQn3TqgAxOjQFe4NfLNKl-sQ7Ndi1sZEzOpesx2L/pub?gid=365796544&single=true&output=csv";
 
@@ -175,6 +264,7 @@ function renderProducts(){
     const card=document.createElement("div");
     card.className="card";
     card.setAttribute("data-category",p.Category);
+    card.onclick=()=>openModal(p.ProductID);
 
     card.innerHTML=`
       <img src="${p.Image}" onerror="this.src='https://via.placeholder.com/400'">
@@ -188,6 +278,48 @@ function renderProducts(){
 
     container.appendChild(card);
   });
+}
+
+function openModal(productID){
+  const product=globalProducts.find(p=>p.ProductID===productID);
+  const related=globalVariants.filter(v=>v.ProductID===productID);
+
+  document.getElementById("modalImage").src=product.Image;
+  document.getElementById("modalTitle").innerText=product.Name;
+  document.getElementById("modalCategory").innerText=product.Category;
+  document.getElementById("modalDescription").innerText=product.Description || "";
+
+  const container=document.getElementById("variantList");
+  container.innerHTML="";
+
+  related.forEach(v=>{
+    container.innerHTML+=`
+      <div class="variant-box">
+        <strong>${v.Watt}</strong>
+        <div class="variant-price">${v.Price} EGP</div>
+        <div class="variant-size">Size: ${v.Dimension}</div>
+        <div class="${v.Stock==='In Stock'?'stock-in':'stock-out'}">
+          ${v.Stock}
+        </div>
+        ${v.Stock==='In Stock'
+          ? `<button onclick="orderWhatsApp('${product.Name}','${v.Watt}')">
+              Order on WhatsApp
+            </button>`
+          : ''}
+      </div>
+    `;
+  });
+
+  document.getElementById("productModal").style.display="flex";
+}
+
+function closeModal(){
+  document.getElementById("productModal").style.display="none";
+}
+
+function orderWhatsApp(name,watt){
+  const message=`I want to order ${name} - ${watt}`;
+  window.open(`https://wa.me/201092278234?text=${encodeURIComponent(message)}`);
 }
 
 function buildFilter(){
@@ -223,6 +355,7 @@ document.addEventListener("input",function(e){
 });
 
 loadData();
+
 </script>
 
 </body>
