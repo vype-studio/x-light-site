@@ -12,24 +12,13 @@ header h2{color:white;margin:0}
 .filter-bar{text-align:center;padding:20px}
 .products{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;padding:20px}
 .card{background:white;border-radius:12px;overflow:hidden;box-shadow:0 5px 15px rgba(0,0,0,0.08);cursor:pointer}
-
-/* ✅ التعديل هنا فقط */
-.card img{
-  width:100%;
-  height:220px;
-  object-fit:contain;   /* بدل cover */
-  background:#f4f4f4;   /* علشان الفراغ يبقى شكله نظيف */
-}
-
+.card img{width:100%;height:220px;object-fit:contain;background:#f4f4f4}
 .card-content{padding:15px}
 .badge{display:inline-block;padding:4px 8px;border-radius:20px;font-size:12px;margin-top:5px}
 .in{background:#dcfce7;color:#166534}
 .out{background:#fee2e2;color:#991b1b}
 .whatsapp{position:fixed;bottom:20px;right:20px;background:#25D366;color:white;padding:12px 18px;border-radius:50px;text-decoration:none}
-
-/* Modal */
-.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,0.7);justify-content:center;align-items:center;}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);justify-content:center;align-items:center;}
 .modal-content{background:white;width:90%;max-width:700px;padding:20px;border-radius:12px;max-height:90vh;overflow:auto;position:relative}
 .close{position:absolute;top:10px;right:15px;font-size:22px;cursor:pointer}
 .variant-box{border-bottom:1px solid #eee;padding:10px 0}
@@ -55,7 +44,6 @@ background:rgba(0,0,0,0.7);justify-content:center;align-items:center;}
 
 <a class="whatsapp" href="https://wa.me/201092278234" target="_blank">WhatsApp</a>
 
-<!-- Modal -->
 <div id="productModal" class="modal">
   <div class="modal-content">
     <span class="close" onclick="closeModal()">×</span>
@@ -104,7 +92,7 @@ function renderProducts(){
     if(!p.ProductID) return;
 
     const related=globalVariants.filter(v=>v.ProductID===p.ProductID);
-    const first=related[0];
+    const anyInStock = related.some(v=>v.Stock==="In Stock");
 
     const card=document.createElement("div");
     card.className="card";
@@ -116,8 +104,8 @@ function renderProducts(){
       <div class="card-content">
         <h3>${p.Name}</h3>
         <p>${p.Category || ""}</p>
-        ${first?`<p><strong>${first.Price} EGP</strong></p>`:""}
-        ${first?`<span class="badge ${first.Stock==='In Stock'?'in':'out'}">${first.Stock}</span>`:""}
+        ${related.length?`<p><strong>${related[0].Price} EGP</strong></p>`:""}
+        ${related.length?`<span class="badge ${anyInStock?'in':'out'}">${anyInStock?'In Stock':'Out of Stock'}</span>`:""}
       </div>
     `;
 
@@ -183,6 +171,10 @@ function buildFilter(){
 
 loadData();
 
+</script>
+
+</body>
+</html>
 </script>
 
 </body>
